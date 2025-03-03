@@ -6,7 +6,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.utils import executor
 from dotenv import load_dotenv
-from utils import get_altseason_index, get_btc_dominance
+from utils import get_altseason_index, get_btc_dominance, get_btc_price
 
 # Загружаем токен из переменных окружения
 load_dotenv()
@@ -16,11 +16,15 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
 
+
 # Создаем меню клавиатуры
-keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
-keyboard.add(KeyboardButton("💸Узнать индекс альтсезона💸"))
-keyboard.add(KeyboardButton("📊 Доминация BTC 📊"))
-keyboard.add(KeyboardButton("🎮 Играть 🎮"))
+keyboard = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+keyboard.add(
+KeyboardButton("💸Индекс\nальтсезона💸"),
+KeyboardButton("💰Курс BTC💰"),
+KeyboardButton("📊Доминация BTC📊"),
+KeyboardButton("🎮Играть🎮")
+               )
 
 # Словарь для хранения состояния игры
 user_games = {}
@@ -30,15 +34,15 @@ async def send_welcome(message: Message):
     """Приветственное сообщение с кнопками"""
     await message.answer("Привет! Нажми кнопку, чтобы узнать информацию по рынку или сыграть в игру.", reply_markup=keyboard)
 
-@dp.message_handler(lambda message: message.text == "💸Узнать индекс альтсезона💸")
+@dp.message_handler(lambda message: message.text == "💸Индекс\nальтсезона💸")
 async def send_altseason_index(message: Message):
     """Отправляет пользователю индекс альтсезона"""
     time, index = get_altseason_index()
     if index is not None:
-        date = datetime.datetime.strptime(time, "%d.%m.%Y").strftime("%d.%m.%y")
+        date = datetime.datetime.strptime(time, "%Y-%m-%d").strftime("%d.%m.%y")
         
         if 1 <= index < 25:
-            season = "Биткоин-сезон"
+            season = "🤯Ну, хуже уже не будет и бац бац бац-бац-бац и Биткоин-сезон🤯"
         elif 25 <= index < 75:
             season = "Хуевое💩, а это значит что ты бич"
         else:
@@ -50,7 +54,7 @@ async def send_altseason_index(message: Message):
     
     await message.answer(text)
 
-@dp.message_handler(lambda message: message.text == "📊 Доминация BTC 📊")
+@dp.message_handler(lambda message: message.text == "📊Доминация BTC📊")
 async def send_btc_dominance(message: Message):
     """Отправляет пользователю доминацию BTC"""
     dominance = get_btc_dominance()
@@ -61,7 +65,7 @@ async def send_btc_dominance(message: Message):
     
     await message.answer(text)
 
-@dp.message_handler(lambda message: message.text == "🎮 Играть 🎮")
+@dp.message_handler(lambda message: message.text == "🎮Играть🎮")
 async def start_game(message: Message):
     """Начинает игру 'Угадай число'"""
     user_id = message.from_user.id
@@ -93,6 +97,17 @@ async def play_game(message: Message):
             del user_games[user_id]
     except ValueError:
         await message.answer("Пожалуйста, введи целое число.")
-
+        
+@dp.message_handler(lambda message: message.text == "💰Курс BTC💰")
+async def send_btc_price(message: Message):
+    """Отправляет пользователю текущий курс BTC"""
+    price = get_btc_price()
+    if price:
+        text = f"💰 Курс BTC - {price:,} USDT".replace(",", ".")
+    else:
+        text = "Не удалось получить курс BTC. Попробуйте позже."
+    
+    await message.answer(text)
+    
 if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True)

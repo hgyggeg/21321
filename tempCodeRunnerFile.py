@@ -1,1 +1,2 @@
-get_altseason_index
+
+bot = Bot(token=TOKEN)
